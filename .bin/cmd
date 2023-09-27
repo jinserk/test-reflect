@@ -18,10 +18,10 @@ case $1 in
         ;;
     "push")
         fn_login
-        docker push ${DOCKER_REGISTRY}/reflex-back:${GIT_REF}
-        docker push ${DOCKER_REGISTRY}/reflex-back:latest
-        docker push ${DOCKER_REGISTRY}/reflex-front:${GIT_REF}
-        docker push ${DOCKER_REGISTRY}/reflex-front:latest
+        docker push ${DOCKER_REGISTRY}/basechemp-back:${GIT_REF}
+        docker push ${DOCKER_REGISTRY}/basechemp-back:latest
+        docker push ${DOCKER_REGISTRY}/basechemp-front:${GIT_REF}
+        docker push ${DOCKER_REGISTRY}/basechemp-front:latest
         ;;
     "up")
         docker compose -f ${dc_file} up -d

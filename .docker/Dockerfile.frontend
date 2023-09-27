@@ -2,7 +2,7 @@
 # Stage 1: backend image
 
 ARG DOCKER_REGISTRY=ghcr.io/jinserk
-ARG BACKEND_IMG=${DOCKER_REGISTRY}/reflex-back:latest
+ARG BACKEND_IMG=${DOCKER_REGISTRY}/basechemp-back:latest
 FROM ${BACKEND_IMG} as backend
 
 
@@ -11,7 +11,7 @@ FROM ${BACKEND_IMG} as backend
 
 FROM caddy:latest
 
-ARG APP_DIR=/reflex-app
+ARG APP_DIR=/basechemp
 
 COPY --from=backend ${APP_DIR}/.web/_static /srv
 ADD .docker/Caddyfile /etc/caddy/Caddyfile

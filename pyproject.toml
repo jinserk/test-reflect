@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "test-reflex"
+name = "basechemp"
 version = "0.1.0"
 description = ""
 authors = ["Jinserk Baik <823222+jinserk@users.noreply.github.com>"]

@@ -32,7 +32,7 @@ RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg -
 ARG API_URL
 
 # Copy local context to `/app` inside container (see .dockerignore)
-ARG APP_DIR=/reflex-app
+ARG APP_DIR=/basechemp
 RUN mkdir -p ${APP_DIR}
 
 WORKDIR ${APP_DIR}
@@ -70,7 +70,7 @@ ENV PYTHONUNBUFFERED 1
 
 ARG API_URL
 
-ARG APP_DIR=/reflex-app
+ARG APP_DIR=/basechemp
 WORKDIR ${APP_DIR}
 
 RUN adduser --disabled-password --home ${APP_DIR} reflex

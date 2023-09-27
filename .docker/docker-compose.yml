@@ -5,16 +5,16 @@ services:
     image: postgres:15
     pull_policy: always
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-basechemp:/var/lib/postgresql/data
     environment:
       TZ: US/Eastern
       PGTZ: UTC
-      POSTGRES_DATABASE: reflex
+      POSTGRES_DATABASE: basechemp
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
 
   backend:
-    image: ${DOCKER_REGISTRY}/reflex-back:latest
+    image: ${DOCKER_REGISTRY}/basechemp-back:latest
     #pull_policy: always
     platform: linux/amd64
     build:
@@ -22,11 +22,11 @@ services:
       dockerfile: ${PKG_PATH}/.docker/Dockerfile.backend
       x-bake:
         tags:
-          - ${DOCKER_REGISTRY}/reflex-back:${GIT_REF}
-          - ${DOCKER_REGISTRY}/reflex-back:latest
+          - ${DOCKER_REGISTRY}/basechemp-back:${GIT_REF}
+          - ${DOCKER_REGISTRY}/basechemp-back:latest
         platforms:
           - linux/amd64
-        pull: true
+        #pull: true
         cache_from:
           - type=local,src=${PKG_PATH}/.cache
         cache_to:
@@ -47,18 +47,18 @@ services:
       bash -c "reflex init && reflex run --loglevel debug"
       
   frontend:
-    image: ${DOCKER_REGISTRY}/reflex-front:latest
+    image: ${DOCKER_REGISTRY}/basechemp-front:latest
     platform: linux/amd64
     build:
       context: ${PKG_PATH}
       dockerfile: ${PKG_PATH}/.docker/Dockerfile.frontend
       x-bake:
         tags:
-          - ${DOCKER_REGISTRY}/reflex-front:${GIT_REF}
-          - ${DOCKER_REGISTRY}/reflex-front:latest
+          - ${DOCKER_REGISTRY}/basechemp-front:${GIT_REF}
+          - ${DOCKER_REGISTRY}/basechemp-front:latest
         platforms:
           - linux/amd64
-        pull: true
+        #pull: true
         cache_from:
           - type=local,src=${PKG_PATH}/.cache
         cache_to:
@@ -72,5 +72,5 @@ services:
       - backend
         
 volumes:
-  postgres-data:
+  postgres-basechemp:
     driver: local
