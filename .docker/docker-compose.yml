@@ -1,0 +1,76 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:15
+    pull_policy: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      TZ: US/Eastern
+      PGTZ: UTC
+      POSTGRES_DATABASE: reflex
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+  backend:
+    image: ${DOCKER_REGISTRY}/reflex-back:latest
+    #pull_policy: always
+    platform: linux/amd64
+    build:
+      context: ${PKG_PATH}
+      dockerfile: ${PKG_PATH}/.docker/Dockerfile.backend
+      x-bake:
+        tags:
+          - ${DOCKER_REGISTRY}/reflex-back:${GIT_REF}
+          - ${DOCKER_REGISTRY}/reflex-back:latest
+        platforms:
+          - linux/amd64
+        pull: true
+        cache_from:
+          - type=local,src=${PKG_PATH}/.cache
+        cache_to:
+          - type=local,dst=${PKG_PATH}/.cache,force-compression=true
+      args:
+        API_URL: https://${DOMAIN:-localhost}
+        GIT_REF: ${GIT_REF}
+        APP_DIR: ${APP_DIR}
+    #volumes:
+    #  - ${PKG_PATH}:${APP_DIR}
+    ports:
+      - 3001:3001
+    depends_on:
+      - postgres
+    env_file:
+      - ${PKG_PATH}/.env
+    command: >
+      bash -c "reflex init && reflex run --loglevel debug"
+      
+  frontend:
+    image: ${DOCKER_REGISTRY}/reflex-front:latest
+    platform: linux/amd64
+    build:
+      context: ${PKG_PATH}
+      dockerfile: ${PKG_PATH}/.docker/Dockerfile.frontend
+      x-bake:
+        tags:
+          - ${DOCKER_REGISTRY}/reflex-front:${GIT_REF}
+          - ${DOCKER_REGISTRY}/reflex-front:latest
+        platforms:
+          - linux/amd64
+        pull: true
+        cache_from:
+          - type=local,src=${PKG_PATH}/.cache
+        cache_to:
+          - type=local,dst=${PKG_PATH}/.cache,force-compression=true
+    ports:
+      - 443:443
+      - 80:80  # for acme-challenge via HTTP
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    depends_on:
+      - backend
+        
+volumes:
+  postgres-data:
+    driver: local

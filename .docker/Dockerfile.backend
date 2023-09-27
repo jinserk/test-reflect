@@ -1,0 +1,83 @@
+###############
+# Stage 1: init
+
+FROM python:3.11-bookworm as init
+
+# make python3 to default
+RUN update-alternatives --install /usr/bin/python python /usr/local/bin/python3.11 10
+ENV PYTHONUNBUFFERED 1
+
+# install system dependencies
+RUN apt-get -y update \
+ && apt-get -y upgrade --with-new-pkgs --autoremove \
+ && apt-get -y install \
+    bzip2 ca-certificates curl less netbase tini unzip wget \
+    apt-transport-https gnupg git software-properties-common \
+    direnv libpq-dev \
+ && apt-get -y autoclean \
+ && apt-get -y autoremove --purge \
+ && rm -rf /var/lib/apt/lists/*
+ 
+# install nodejs
+ARG NODE_MAJOR_VERSION=18
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /usr/share/keyrings/nodesource.gpg \
+ && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR_VERSION}.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list > /dev/null \
+ && apt-get -y update \
+ && apt-get -y install nodejs \
+ && apt-get -y autoclean \
+ && apt-get -y autoremove --purge \
+ && rm -rf /var/lib/apt/lists/*
+
+# Pass `--build-arg API_URL=http://app.example.com:8000` during build
+ARG API_URL
+
+# Copy local context to `/app` inside container (see .dockerignore)
+ARG APP_DIR=/reflex-app
+RUN mkdir -p ${APP_DIR}
+
+WORKDIR ${APP_DIR}
+COPY . .
+
+# Create virtualenv which will be copied into final container
+ENV VIRTUAL_ENV=${APP_DIR}/.venv
+ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
+RUN python -m venv ${VIRTUAL_ENV}
+RUN pip install --upgrade --no-cache-dir pip poetry
+
+RUN poetry env use ${VIRTUAL_ENV}/bin/python \
+ && poetry env info \
+ && poetry install --no-root
+
+# Deploy templates and prepare app
+RUN reflex init
+ 
+# Export static copy of frontend to /app/.web/_static
+RUN reflex export --frontend-only --no-zip
+
+# Copy static files out of /app to save space in backend image
+RUN mv .web/_static /tmp/_static
+RUN rm -rf .web && mkdir .web
+RUN mv /tmp/_static .web/_static
+
+#########################################
+# Stage 2: copy artifacts into slim image 
+
+FROM python:3.11-slim-bookworm
+
+# make python3 to default
+RUN update-alternatives --install /usr/bin/python python /usr/local/bin/python3.11 10
+ENV PYTHONUNBUFFERED 1
+
+ARG API_URL
+
+ARG APP_DIR=/reflex-app
+WORKDIR ${APP_DIR}
+
+RUN adduser --disabled-password --home ${APP_DIR} reflex
+COPY --chown=reflex --from=init ${APP_DIR} ${APP_DIR}
+USER reflex
+
+ENV PATH="${APP_DIR}/.venv/bin:$PATH"
+ENV API_URL=$API_URL
+
+CMD reflex db migrate && reflex run --env prod --backend-only

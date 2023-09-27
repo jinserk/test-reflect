@@ -1,0 +1,17 @@
+########################
+# Stage 1: backend image
+
+ARG DOCKER_REGISTRY=ghcr.io/jinserk
+ARG BACKEND_IMG=${DOCKER_REGISTRY}/reflex-back:latest
+FROM ${BACKEND_IMG} as backend
+
+
+########################################
+# Stage 2: copy artifacts to caddy image
+
+FROM caddy:latest
+
+ARG APP_DIR=/reflex-app
+
+COPY --from=backend ${APP_DIR}/.web/_static /srv
+ADD .docker/Caddyfile /etc/caddy/Caddyfile

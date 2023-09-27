@@ -1,0 +1,31 @@
+#!/bin/bash
+
+[[ $# -lt 1 ]] && echo "Need a subcommand." && exit 1
+
+source ${PKG_PATH}/.env
+dc_file=${PKG_PATH}/.docker/docker-compose.yml
+
+fn_login()
+{
+    echo ${CR_PAT} | docker login ghcr.io -u ${CR_USER} --password-stdin
+}
+
+case $1 in
+    "build")
+        fn_login
+        docker buildx bake -f ${dc_file} --load backend
+        docker buildx bake -f ${dc_file} --load frontend
+        ;;
+    "push")
+        fn_login
+        docker push ${DOCKER_REGISTRY}/reflex-back:${GIT_REF}
+        docker push ${DOCKER_REGISTRY}/reflex-back:latest
+        docker push ${DOCKER_REGISTRY}/reflex-front:${GIT_REF}
+        docker push ${DOCKER_REGISTRY}/reflex-front:latest
+        ;;
+    "up")
+        docker compose -f ${dc_file} up -d
+        ;;
+    *)
+        docker compose -f ${dc_file} $1 reflex ${@:2}
+esac
